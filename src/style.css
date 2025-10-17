@@ -1,0 +1,154 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+    overflow: hidden;
+}
+
+#container {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.image-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center; /* horizontal center */
+    align-items: center;     /* vertical center */
+}
+
+.image-wrapper img {
+    display: block;
+    min-height: 100vh;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.logo-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.logo-heading {
+    color: white;
+    font-family: "Trebuchet MS",serif;
+    margin-top: 1rem;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+    transition-delay: 2s;
+    font-style: italic;
+}
+
+.logo-container.focused .logo-heading {
+    opacity: 1;
+}
+
+
+.logodummy {
+    width: 50vw;
+    aspect-ratio: 32/9;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+}
+
+#indicator {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.dot.active {
+    background: #4A90E2;
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.6);
+}
+
+.dot:hover {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.dot.active:hover {
+    background: #4A90E2;
+}
+
+.tooltip {
+    position: absolute;
+    left: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.dot:hover .tooltip {
+    opacity: 1;
+}
+
+.mainbuttons {
+    padding: 30px;
+    border-radius: 30px;
+    color: white;
+    background: blue;
+    border: none;
+}
+.mainbuttons:hover {
+    background:lightblue;
+    cursor:pointer;
+}
+.mainbuttonscontainer {
+    padding-top:1rem;
+    padding-bottom:1rem;
+    z-index:100;
+    pointer-events: auto;
+}
+
+.ourthreecontainer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    transform: translate(-50%, -50%);
+}
+
