@@ -64,7 +64,12 @@ function scrollToImage(index) {
     if (!visitedSections.has(index)) {
         visitedSections.add(index);
         wrappers[index].querySelector('.logo-container').classList.add('focused');
+        
 
+        setTimeout(() => {
+            wrappers[index].querySelector('.ourthreecontainer').classList.add('noblur');
+        }, 200); 
+        
         // Trigger model camera ease-in animation if present
         const threeContainer = wrappers[index].querySelector('.ourthreecontainer');
         if (threeContainer) {
@@ -147,15 +152,72 @@ document.addEventListener("DOMContentLoaded", () => {
         initThreeViewer(container, modelPath, viewers);
     });
 
-    window.addEventListener('resize', () => {
+    let lastWidth = window.innerWidth;
+    let lastHeight = window.innerHeight;
+
+    function adjustScrollForCurrentSection() {
+        if (currentDisplayingLogoIndex !== null) {
+            container.scrollTo({
+                top: getImageCenter(currentDisplayingLogoIndex),
+                behavior: 'instant'
+            });
+        }
+    }
+    function resizeIfNeeded() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        if (width === lastWidth && height === lastHeight) return;
+
+        lastWidth = width;
+        lastHeight = height;
+
         viewers.forEach(({ renderer, camera }, container) => {
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            camera.aspect = width / height;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
+            renderer.setSize(w, h);
         });
+        adjustScrollForCurrentSection();
+    }
+    
+    //A handful of listeners to try and cover all events where we need a resize (turns out it's not only resize!)
+    window.addEventListener('resize', resizeIfNeeded);
+    window.addEventListener('focus', resizeIfNeeded);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) resizeIfNeeded();
     });
+    document.addEventListener('fullscreenchange', resizeIfNeeded);
+
+    
+    //This is to fix a thing that annoyed me that if a user grabs the scrollbar on the browser and scrolls to a page our programmatic scrolling doesn't play along.
+    //Now it will wait 100ms and then scroll to the nearest section using our logic so everything feels correct
+    let manualScrollTimeout = null;
+
+    container.addEventListener('scroll', () => {
+        if (isScrollingToNewSection) return; //ignore our programmatic scrolls
+
+        if (manualScrollTimeout) clearTimeout(manualScrollTimeout);
+
+        manualScrollTimeout = setTimeout(() => {
+            let nearestIndex = 0;
+            let nearestDistance = Infinity;
+            wrappers.forEach((wrapper, i) => {
+                const wrapperCenter = wrapper.offsetTop + wrapper.offsetHeight / 2;
+                const distance = Math.abs(wrapperCenter - (container.scrollTop + window.innerHeight / 2));
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestIndex = i;
+                }
+            });
+            
+            if (nearestIndex !== currentDisplayingLogoIndex) {
+                scrollToImage(nearestIndex);
+            }
+        }, 100);
+    });
+
 });
 
 function initThreeViewer(container, modelPath, viewers) {
@@ -201,8 +263,28 @@ function initThreeViewer(container, modelPath, viewers) {
     loader.load(
         import.meta.env.BASE_URL + modelPath,
         (gltf) => {
+            
+            const pivot = new THREE.Object3D();
+            pivot.position.z = -0.1
+            scene.add(pivot);
+            
             viewer.model = gltf.scene;
-            scene.add(gltf.scene);
+            
+            //Center the model based on its bounding box
+            const box = new THREE.Box3().setFromObject(viewer.model);
+            const center = box.getCenter(new THREE.Vector3());
+            
+            //plus a small adjustment upward to sit with the heading
+            const adjustmentForHeaderHeight = 0.1;
+            center.y -= adjustmentForHeaderHeight;
+            center.z += pivot.position.z;
+            viewer.model.position.sub(center);
+
+            pivot.add(viewer.model);
+            viewer.pivot = pivot;
+            
+            
+            
         },
         undefined,
         (error) => console.error('Failed to load model:', error)
@@ -210,7 +292,7 @@ function initThreeViewer(container, modelPath, viewers) {
 
     // Mouse-based tilt
     let mouseX = 0, mouseY = 0;
-    const maxTilt = 0.3; // radians
+    const maxTilt = 0.1; // radians
     container.addEventListener('mousemove', (e) => {
         const rect = container.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width - 0.5;
@@ -223,11 +305,11 @@ function initThreeViewer(container, modelPath, viewers) {
         viewer.animationFrame = requestAnimationFrame(animate);
 
         // Smooth tilt toward mouse
-        if (viewer.model) {
+        if (viewer.pivot) {
             const targetRotX = mouseY * maxTilt;
             const targetRotY = mouseX * maxTilt;
-            viewer.model.rotation.x += (targetRotX - viewer.model.rotation.x) * 0.1;
-            viewer.model.rotation.y += (targetRotY - viewer.model.rotation.y) * 0.1;
+            viewer.pivot.rotation.x += (targetRotX - viewer.pivot.rotation.x) * 0.1;
+            viewer.pivot.rotation.y += (targetRotY - viewer.pivot.rotation.y) * 0.1;
         }
 
         renderer.render(scene, camera);
@@ -249,7 +331,7 @@ function initThreeViewer(container, modelPath, viewers) {
         }
 
         function animateCamera(time) {
-            const elapsed = time - startTime;
+            const elapsed = (time - startTime)*0.5;
             const t = Math.min(elapsed / duration, 1);
             const easedT = easeOutCubic(t);
 
