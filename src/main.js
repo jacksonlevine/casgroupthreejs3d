@@ -218,7 +218,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 100);
     });
 
+    function animateActiveViewer() {
+        const activeContainer = wrappers[currentDisplayingLogoIndex].querySelector('.ourthreecontainer');
+        const viewer = viewers.get(activeContainer);
+
+        if (viewer) {
+            // Smooth tilt toward mouse
+            if (viewer.pivot) {
+                const targetRotX = mouseY * maxTilt;
+                const targetRotY = mouseX * maxTilt;
+                viewer.pivot.rotation.x += (targetRotX - viewer.pivot.rotation.x) * 0.1;
+                viewer.pivot.rotation.y += (targetRotY - viewer.pivot.rotation.y) * 0.1;
+            }
+
+            // Update camera animation if any
+            if (viewer.cameraAnimation) {
+                viewer.cameraAnimation(performance.now());
+            }
+
+            // Render only the active viewer
+            viewer.renderer.render(viewer.scene, viewer.camera);
+        }
+
+        requestAnimationFrame(animateActiveViewer);
+    }
+
+    requestAnimationFrame(animateActiveViewer);
+
 });
+
+let mouseX = 0, mouseY = 0;
+const maxTilt = 0.1; // radians
 
 function initThreeViewer(container, modelPath, viewers) {
     const scene = new THREE.Scene();
@@ -291,8 +321,7 @@ function initThreeViewer(container, modelPath, viewers) {
     );
 
     // Mouse-based tilt
-    let mouseX = 0, mouseY = 0;
-    const maxTilt = 0.1; // radians
+
     container.addEventListener('mousemove', (e) => {
         const rect = container.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width - 0.5;
@@ -301,28 +330,14 @@ function initThreeViewer(container, modelPath, viewers) {
         mouseY = y * 2;
     });
 
-    function animate() {
-        viewer.animationFrame = requestAnimationFrame(animate);
-
-        // Smooth tilt toward mouse
-        if (viewer.pivot) {
-            const targetRotX = mouseY * maxTilt;
-            const targetRotY = mouseX * maxTilt;
-            viewer.pivot.rotation.x += (targetRotX - viewer.pivot.rotation.x) * 0.1;
-            viewer.pivot.rotation.y += (targetRotY - viewer.pivot.rotation.y) * 0.1;
-        }
-
-        renderer.render(scene, camera);
-    }
-
-    animate();
+    
 
     // Smooth camera ease-in (triggered once per section)
     container.addEventListener('focusModel', () => {
         if (viewer.hasAnimatedIn) return;
         viewer.hasAnimatedIn = true;
 
-        const duration = 1500;
+        const duration = 1000;
         const startTime = performance.now();
         const startPos = camera.position.clone();
 
@@ -330,18 +345,16 @@ function initThreeViewer(container, modelPath, viewers) {
             return 1 - Math.pow(1 - t, 3);
         }
 
-        function animateCamera(time) {
-            const elapsed = (time - startTime)*0.5;
+        viewer.cameraAnimation = (time) => {
+            const elapsed = time - startTime;
             const t = Math.min(elapsed / duration, 1);
             const easedT = easeOutCubic(t);
-
             camera.position.lerpVectors(startPos, targetCameraPos, easedT);
-            renderer.render(scene, camera);
 
-            if (t < 1) requestAnimationFrame(animateCamera);
-        }
-
-        requestAnimationFrame(animateCamera);
+            if (t >= 1) {
+                viewer.cameraAnimation = null; // done
+            }
+        };
     });
 }
 
@@ -365,3 +378,4 @@ function disposeThreeViewer(container, viewers) {
 
     viewers.delete(container);
 }
+

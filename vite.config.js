@@ -1,5 +1,5 @@
 ﻿import { defineConfig } from 'vite';
 export default defineConfig({
-    base: '/casgroupthreejs3d',
+    base: '/cas-group/3dthreejs/',
     assetsInclude: ['**/*.glb'],
 });
