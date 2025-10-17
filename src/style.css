@@ -52,7 +52,7 @@ html, body {
     pointer-events: none;
     opacity: 0;
     transition: opacity 1s ease;
-    transition-delay: 2s;
+    transition-delay: 0.7s;
     font-style: italic;
 }
 
@@ -152,18 +152,23 @@ html, body {
     pointer-events: auto;
 }
 
-.ourthreecontainer {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100vw;
-    height: 100vh;
-    transform: translate(-50%, -50%);
-    filter: blur(3px);
-    transition: filter 1.0s ease-in-out;
+.ourmodelspot {
+    display:none;
 }
 
-.ourthreecontainer.noblur {
-    transition: filter 1.0s ease-in-out;
-    filter: blur(0px);
+#ourcanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    filter: blur(10px);        /* default: blurry */
+    transition: filter 0.1s ease-in;           /* no transition when adding blur */
+    z-index: 1000;
+    pointer-events: none;
+}
+
+#ourcanvas.noblur {
+    filter: blur(0px);          /* unblur */
+    transition: filter 1s ease-out; /* fade out blur over 1s */
 }
